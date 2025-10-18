@@ -12,7 +12,25 @@ jobs:
     steps:
     - name: Checkout repository
       uses: actions/checkout@v4
-        
+    
+    - name: Prepare EC2 directory
+      uses: appleboy/ssh-action@v0.1.7
+      with:
+        host: ${{ secrets.EC2_HOST }}
+        username: ${{ secrets.EC2_USERNAME }}
+        key: ${{ secrets.EC2_SSH_KEY }}
+        script: |
+          # Ensure directory exists with proper permissions
+          sudo mkdir -p /var/www/html/
+          sudo chown -R ubuntu:ubuntu /var/www/html/
+          sudo chmod -R 755 /var/www/html/
+          
+          # Clear existing files (as ubuntu user)
+          rm -rf /var/www/html/*
+          rm -rf /var/www/html/.[^.]*
+          
+          echo "Directory prepared for deployment"
+
     - name: Deploy static files to EC2
       uses: appleboy/scp-action@v0.1.4
       with:
@@ -23,18 +41,26 @@ jobs:
         source: "./*"
         target: "/var/www/html/"
         strip_components: 1
-        rm: true
+        # Remove the 'rm: true' option since we're handling cleanup manually
 
-    - name: Set permissions and restart Nginx
+    - name: Set final permissions and restart Nginx
       uses: appleboy/ssh-action@v0.1.7
       with:
         host: ${{ secrets.EC2_HOST }}
         username: ${{ secrets.EC2_USERNAME }}
         key: ${{ secrets.EC2_SSH_KEY }}
         script: |
+          # Ensure proper ownership and permissions
           sudo chown -R ubuntu:ubuntu /var/www/html/
           sudo chmod -R 755 /var/www/html/
+          
+          # List files to verify deployment
+          echo "Deployed files:"
+          ls -la /var/www/html/
+          
+          # Restart Nginx
           sudo systemctl restart nginx
           sudo systemctl status nginx --no-pager
+          
           echo "✅ Static site deployed successfully!"
           echo "🌐 Website available at: http://13.61.74.106"
