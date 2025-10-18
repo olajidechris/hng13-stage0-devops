@@ -12,9 +12,7 @@ jobs:
     steps:
     - name: Checkout repository
       uses: actions/checkout@v4
-    
-    # Skip Node.js setup and build steps entirely
-    
+        
     - name: Deploy static files to EC2
       uses: appleboy/scp-action@v0.1.4
       with:
