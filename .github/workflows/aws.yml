@@ -1,0 +1,46 @@
+name: Deploy Static Site
+
+on:
+  push:
+    branches: [ main ]
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+    
+    - name: Setup Node.js and build (if React/Vue/Angular)
+      uses: actions/setup-node@v4
+      with:
+        node-version: '18'
+        cache: 'npm'
+    
+    - name: Install and build
+      run: |
+        npm ci
+        npm run build
+        # This creates a 'build' or 'dist' folder
+    
+    - name: Deploy build output to EC2
+      uses: appleboy/scp-action@v0.1.4
+      with:
+        host: ${{ secrets.EC2_HOST }}
+        username: ${{ secrets.EC2_USERNAME }}
+        key: ${{ secrets.EC2_SSH_KEY }}
+        source: "./build/*"  # or "./dist/*" depending on your build output
+        target: "/var/www/html/"
+        strip_components: 2
+        rm: true
+
+    - name: Restart Nginx
+      uses: appleboy/ssh-action@v0.1.7
+      with:
+        host: ${{ secrets.EC2_HOST }}
+        username: ${{ secrets.EC2_USERNAME }}
+        key: ${{ secrets.EC2_SSH_KEY }}
+        script: |
+          sudo systemctl restart nginx
+          echo "✅ Static site deployed!"
