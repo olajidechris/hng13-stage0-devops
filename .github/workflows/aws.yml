@@ -24,10 +24,8 @@ jobs:
           sudo mkdir -p /var/www/html/
           sudo chown -R ubuntu:ubuntu /var/www/html/
           sudo chmod -R 755 /var/www/html/
-          
-          # Clear existing files (as ubuntu user)
+          # Clear existing files in directory (as ubuntu user)
           rm -rf /var/www/html/*
-          rm -rf /var/www/html/.[^.]*
           
           echo "Directory prepared for deployment"
 
@@ -40,8 +38,7 @@ jobs:
         port: 22
         source: "./*"
         target: "/var/www/html/"
-        strip_components: 1
-        # Remove the 'rm: true' option since we're handling cleanup manually
+        rm: false
 
     - name: Set final permissions and restart Nginx
       uses: appleboy/ssh-action@v0.1.7
